@@ -4598,17 +4598,19 @@ void monsterDetails(char buf[], creature *monst) {
                     (i > 1 ? "s" : ""));
             }
         } else {
-            combatMath = ((player.currentHP + (monst->info.damage.upperBound * monsterDamageAdjustmentAmount(monst) / FP_FACTOR) - 1) * FP_FACTOR)
+            combatMath = ((player.currentHP + ((monst->info.damage.upperBound * defenseFraction(player.info.defense * FP_FACTOR) / FP_FACTOR) * monsterDamageAdjustmentAmount(monst) / FP_FACTOR) - 1) * FP_FACTOR)
                     / (monst->info.damage.upperBound * monsterDamageAdjustmentAmount(monst));
             if (combatMath < 1) {
                 combatMath = 1;
             }
-            sprintf(newText, "%s has a %i%% chance to hit you, typically hits for %i%% of your current health, and at worst, could defeat you in %i hit%s.\n     ",
+            sprintf(newText, "%s has a %i%% chance to hit you, typically hits for %i%% of your current health, and at worst, could defeat you in %i hit%s. {d=%d, dm=%f}\n     ",
                     capMonstName,
                     combatMath2,
-                    (int) (100 * (monst->info.damage.lowerBound + monst->info.damage.upperBound) * monsterDamageAdjustmentAmount(monst) / 2 / player.currentHP / FP_FACTOR),
+                    (int) (100 * (((monst->info.damage.lowerBound + monst->info.damage.upperBound) * monsterDamageAdjustmentAmount(monst) / 2) * defenseFraction(player.info.defense * FP_FACTOR) / FP_FACTOR) / player.currentHP / FP_FACTOR),
                     combatMath,
-                    (combatMath > 1 ? "s" : ""));
+                    (combatMath > 1 ? "s" : ""),
+                    player.info.defense,
+                    (float) defenseFraction(player.info.defense * FP_FACTOR) / FP_FACTOR);
         }
     }
     upperCase(newText);
@@ -4655,7 +4657,8 @@ void monsterDetails(char buf[], creature *monst) {
         i = strlen(buf);
         i = encodeMessageColor(buf, i, &goodMessageColor);
 
-        combatMath = (monst->currentHP + playerKnownMaxDamage - 1) / playerKnownMaxDamage;
+        short playerKnownMaxDamageAfterDefense = playerKnownMaxDamage * defenseFraction(monst->info.defense * FP_FACTOR) / FP_FACTOR;
+        combatMath = (monst->currentHP + playerKnownMaxDamageAfterDefense - 1) / playerKnownMaxDamageAfterDefense;
         if (combatMath < 1) {
             combatMath = 1;
         }
@@ -4667,12 +4670,14 @@ void monsterDetails(char buf[], creature *monst) {
         } else {
             combatMath2 = hitProbability(&player, monst);
         }
-        sprintf(newText, "You have a %i%% chance to hit %s, typically hit for %i%% of $HISHER current health, and at best, could defeat $HIMHER in %i hit%s.",
+        sprintf(newText, "You have a %i%% chance to hit %s, typically hit for %i%% of $HISHER current health, and at best, could defeat $HIMHER in %i hit%s. {d=%d, dm=%f}",
                 combatMath2,
                 monstName,
-                100 * playerKnownAverageDamage / monst->currentHP,
+                100 * (playerKnownAverageDamage * defenseFraction(monst->info.defense * FP_FACTOR) / FP_FACTOR) / monst->currentHP,
                 combatMath,
-                (combatMath > 1 ? "s" : ""));
+                (combatMath > 1 ? "s" : ""),
+                monst->info.defense,
+                (float) defenseFraction(monst->info.defense * FP_FACTOR) / FP_FACTOR);
     }
     upperCase(newText);
     strcat(buf, newText);

@@ -1523,6 +1523,10 @@ boolean inflictDamage(creature *attacker, creature *defender,
     dungeonFeature theBlood;
     short transferenceAmount;
 
+    // This code is inspired by hitProbability
+    short defense = monsterDefenseAdjusted(defender);
+    damage = (short)(damage * defenseFraction(defense * FP_FACTOR) / FP_FACTOR);
+
     if (damage == 0
         || (defender->info.flags & MONST_INVULNERABLE)) {
 
